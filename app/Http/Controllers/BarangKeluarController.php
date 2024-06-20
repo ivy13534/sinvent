@@ -41,7 +41,6 @@ class BarangKeluarController extends Controller
         return view('v_barangkeluar.index', compact('rsetBarangKeluar'));
     }
 
-
     /**
      * Show the form for creating a new resource.
      */
@@ -65,39 +64,37 @@ class BarangKeluarController extends Controller
                 function ($attribute, $value, $fail) use ($request) {
                     $barang = Barang::findOrFail($request->barang_id);
                     $stok_barang = $barang->stok;
-    
+
                     if ($value > $stok_barang) {
                         $fail("Kuantitas tidak boleh melebihi stok ($stok_barang)");
                     } else {
-                        // Simpan data barang keluar hanya jika kuantitas valid
-                        BarangKeluar::create([
-                            'tgl_keluar' => $request->tgl_keluar,
-                            'qty_keluar' => $value,
-                            'barang_id' => $request->barang_id,
-                        ]);
-    
-                        // Mengurangi stok barang hanya jika kuantitas valid
-                        $barang->stok -= $value;
-                        $barang->save();
+                        // Validasi tanggal keluar tidak boleh sebelum tanggal masuk
+                        $tglMasuk = DB::table('barangmasuk')
+                            ->where('barang_id', $request->barang_id)
+                            ->min('tgl_masuk');
+
+                        if (strtotime($request->tgl_keluar) < strtotime($tglMasuk)) {
+                            $fail("Tanggal keluar tidak boleh sebelum tanggal masuk pertama ($tglMasuk)");
+                        }
                     }
                 },
             ],
             'barang_id' => 'required|exists:barang,id',
         ]);
-    
+
+        // Simpan data barang keluar hanya jika validasi lulus
+        BarangKeluar::create([
+            'tgl_keluar' => $request->tgl_keluar,
+            'qty_keluar' => $request->qty_keluar,
+            'barang_id' => $request->barang_id,
+        ]);
+
+        // Mengurangi stok barang hanya jika kuantitas valid
+        $barang = Barang::findOrFail($request->barang_id);
+        $barang->stok -= $request->qty_keluar;
+        $barang->save();
+
         return redirect()->route('barangkeluar.index')->with(['success' => 'Data Berhasil Disimpan!']);
-    }
-    
-    
-
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        $rsetBarangKeluar = BarangKeluar::find($id);
-        return view('v_barangkeluar.show', compact('rsetBarangKeluar'));
     }
 
     /**
@@ -130,29 +127,48 @@ class BarangKeluarController extends Controller
                     if ($value > $stok_barang) {
                         $fail("Kuantitas tidak boleh melebihi stok ($stok_barang)");
                     } else {
-                        // Kembalikan stok sebelumnya
-                        $barang->stok += $barangKeluar->qty_keluar;
-                        $barang->save();
+                        // Validasi tanggal keluar tidak boleh sebelum tanggal masuk
+                        $tglMasuk = DB::table('barangmasuk')
+                            ->where('barang_id', $request->barang_id)
+                            ->min('tgl_masuk');
 
-                        // Simpan data barang keluar hanya jika kuantitas valid
-                        $barangKeluar->update([
-                            'tgl_keluar' => $request->tgl_keluar,
-                            'qty_keluar' => $value,
-                            'barang_id' => $request->barang_id,
-                        ]);
-
-                        // Mengurangi stok barang hanya jika kuantitas valid
-                        $barang->stok -= $value;
-                        $barang->save();
+                        if (strtotime($request->tgl_keluar) < strtotime($tglMasuk)) {
+                            $fail("Tanggal keluar tidak boleh sebelum tanggal masuk pertama ($tglMasuk)");
+                        }
                     }
                 },
             ],
             'barang_id' => 'required|exists:barang,id',
         ]);
 
+        // Kembalikan stok sebelumnya
+        $barangKeluar = BarangKeluar::findOrFail($id);
+        $barang = Barang::findOrFail($request->barang_id);
+        $barang->stok += $barangKeluar->qty_keluar;
+        $barang->save();
+
+        // Simpan data barang keluar hanya jika kuantitas valid
+        $barangKeluar->update([
+            'tgl_keluar' => $request->tgl_keluar,
+            'qty_keluar' => $request->qty_keluar,
+            'barang_id' => $request->barang_id,
+        ]);
+
+        // Mengurangi stok barang hanya jika kuantitas valid
+        $barang->stok -= $request->qty_keluar;
+        $barang->save();
+
         return redirect()->route('barangkeluar.index')->with(['success' => 'Data Berhasil Diubah!']);
     }
 
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $rsetBarangKeluar = BarangKeluar::find($id);
+        return view('v_barangkeluar.show', compact('rsetBarangKeluar'));
+    }
 
     /**
      * Remove the specified resource from storage.
