@@ -1,16 +1,28 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CategoryController;
+
+use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\BarangController;
+use App\Http\Controllers\KategoriController;
+use App\Http\Controllers\BarangMasukController;
+use App\Http\Controllers\BarangKeluarController;
+use App\Http\Controllers\DashboardController;
 
-// Define the route for the '/' URI outside of any callback function
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth'); 
 
-// Define the resourceful route for '/products'
-Route::resource('products', ProductController::class);
-Route::resource('category', CategoryController::class);
-Route::resource('barang', BarangController::class);
+Route::resource('barang', BarangController::class)->middleware('auth');
+
+Route::get('login', [LoginController::class,'index'])->name('login')->middleware('guest');
+Route::post('login', [LoginController::class,'authenticate']);
+Route::post('logout', [LoginController::class,'logout']);
+Route::get('logout', [LoginController::class,'logout']);
+
+Route::get('register', [RegisterController::class,'create']);
+Route::post('register', [RegisterController::class,'store']);
+
+Route::resource('kategori', KategoriController::class)->middleware('auth');
+Route::resource('barangmasuk',BarangMasukController::class)->middleware('auth');
+Route::resource('barangkeluar',BarangKeluarController::class)->middleware('auth');

@@ -19,8 +19,8 @@ return new class extends Migration
             $table->smallInteger('stok')->default(0);
             $table->tinyInteger('kategori_id')->unsigned(); // Change to tinyInteger
             $table->foreign('kategori_id')->references('id')->on('kategori')
-                  ->onUpdate('cascade')
-                  ->onDelete('restrict');
+                  ->cascadeOnUpdate()
+                  ->restrictOnDelete();
             $table->timestamps();
         });        
     }
