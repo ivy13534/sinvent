@@ -8,18 +8,11 @@ use Illuminate\Http\Request;
 
 class KategoriController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $rsetKategori = Kategori::all();
         return response()->json($rsetKategori);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -34,39 +27,45 @@ class KategoriController extends Controller
 
         return response()->json(['success' => 'Data Berhasil Disimpan!'], 201);
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Kategori $kategori)
+    public function show($id)
     {
-        return response()->json($kategori);
-    }
+        $kategori = Kategori::find($id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Kategori $kategori)
+        if ($kategori) {
+            return response()->json($kategori);
+        } else {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
+    }
+    public function update(Request $request, $id)
     {
         $request->validate([
             'deskripsi' => 'required',
             'kategori' => 'required|in:M,A,BHP,BTHP',
         ]);
 
-        $kategori->update([
-            'deskripsi' => $request->deskripsi,
-            'kategori' => $request->kategori,
-        ]);
+        $kategori = Kategori::find($id);
 
-        return response()->json(['success' => 'Data Berhasil Diubah!']);
+        if ($kategori) {
+            $kategori->update([
+                'deskripsi' => $request->deskripsi,
+                'kategori' => $request->kategori,
+            ]);
+
+            return response()->json(['success' => 'Data Berhasil Diubah!']);
+        } else {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Kategori $kategori)
+    public function destroy($id)
     {
-        $kategori->delete();
-        return response()->json(['success' => 'Data Berhasil Dihapus!']);
+        $kategori = Kategori::find($id);
+
+        if ($kategori) {
+            $kategori->delete();
+            return response()->json(['success' => 'Data Berhasil Dihapus!']);
+        } else {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
     }
 }
